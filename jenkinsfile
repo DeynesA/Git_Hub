@@ -7,6 +7,21 @@ pipeline {
     }
 
     stages {
+        stage('Clean_Workplace') {
+            steps {
+                sh "rm -rf ./*"
+            }
+        }
+        stage('Checkout') {
+            steps {
+                sh "git clone https://github.com/DeynesA/Git_Hub.git"
+            }
+        }
+        stage('Build') {
+            steps {
+                sh "echo 'Building project'"
+            }
+        }
         stage('Deploy') {
             steps {
                 script {
@@ -15,22 +30,39 @@ pipeline {
                         echo "Achtung! Deployment auf PROD darf nur manuell erfolgen!"
                         error("Deployment auf PROD abgebrochen.")
                     } else {
-                        if (params.ENV == 'dev') {
-                            echo "Deployment in DEV läuft..."
-                        } else if (params.ENV == 'staging') {
-                            echo "Deployment in STAGING läuft..."
-                        } else if (params.ENV == 'prod') {
-                            echo "Deployment in PROD läuft..."
+                        try {
+                            if (params.ENV == 'dev') {
+                                echo "Deployment in DEV läuft..."
+                            } else if (params.ENV == 'staging') {
+                                echo "Deployment in STAGING läuft..."
+                            } else if (params.ENV == 'prod') {
+                                echo "Deployment in PROD läuft..."
+                            }
+                            echo "Nachricht des Nutzers: ${message}"
+                            sh 'exit 1' // Simuliert einen Fehler
+                        } catch (Exception e) {
+                            echo "Fehler! Deployment in ${params.ENV} fehlgeschlagen."
+                            currentBuild.result = 'FAILURE'
                         }
-                        echo "Nachricht des Nutzers: ${message}"
                     }
                 }
             }
         }
         stage('Verification') {
             steps {
-                echo "Deployment erfolgreich für ${params.ENV}"
+                script {
+                    if (currentBuild.result == 'FAILURE') {
+                        echo "Fehler! Deployment in ${params.ENV} fehlgeschlagen."
+                    } else {
+                        echo "Deployment erfolgreich"
+                    }
+                }
             }
+        }
+    }
+    post {
+        always {
+            echo "Pipeline beendet, abgeschlossen"
         }
     }
 }
