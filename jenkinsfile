@@ -7,21 +7,6 @@ pipeline {
     }
 
     stages {
-        stage('Clean_Workplace') {
-            steps {
-                sh "rm -rf ./*"
-            }
-        }
-        stage('Checkout') {
-            steps {
-                sh "git clone https://github.com/DeynesA/Git_Hub.git"
-            }
-        }
-        stage('Build') {
-            steps {
-                sh "echo 'Building project'"
-            }
-        }
         stage('Deploy') {
             steps {
                 script {
@@ -54,7 +39,7 @@ pipeline {
                     if (currentBuild.result == 'FAILURE') {
                         echo "Fehler! Deployment in ${params.ENV} fehlgeschlagen."
                     } else {
-                        echo "Deployment erfolgreich"
+                        echo "Deployment erfolgreich für ${params.ENV}"
                     }
                 }
             }
@@ -62,7 +47,7 @@ pipeline {
     }
     post {
         always {
-            echo "Pipeline beendet, abgeschlossen"
+            echo "Pipeline abgeschlossen"
         }
     }
 }
