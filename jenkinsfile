@@ -2,23 +2,68 @@ pipeline {
     agent any
 
     parameters {
+        // Hausaufgabe 1: Jenkinsfile mit Parametern erstellen
         choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Wähle die Umgebung')
+        // Hausaufgabe 3: Nutzerdefinierten Text als Parameter einfügen
         string(name: 'MESSAGE', defaultValue: '', description: 'Gib eine Nachricht für das Deployment an')
     }
 
     stages {
+        stage('Clean-workplace') {
+            steps {
+                script {
+                    sh "rm -rf ./*"
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                script {
+                    // Hausaufgabe 6: Mehrere Dateien stashen und in separaten Stages nutzen
+                    writeFile file: 'config.json', text: '{"env": "staging"}'
+                    writeFile file: 'readme.txt', text: 'Dies ist eine Jenkins-Pipeline'
+                    // Hausaufgabe 7: Stash mit Parametern kombinieren
+                    writeFile file: 'deploy-info.txt', text: "Deployment für: ${params.ENV}"
+                    // Hausaufgabe 8: Stash in einer Fehlerbehandlung nutzen
+                    writeFile file: 'log.txt', text: 'Build erfolgreich gestartet.'
+                    // Stashe die Dateien
+                    stash name: 'configFile', includes: 'config.json'
+                    stash name: 'readmeFile', includes: 'readme.txt'
+                    stash name: 'deployInfo', includes: 'deploy-info.txt'
+                    stash name: 'logFile', includes: 'log.txt'
+                }
+            }
+        }
         stage('Deploy') {
             steps {
                 script {
-                    def message = params.MESSAGE ? params.MESSAGE : 'Kein Kommentar zum Deployment angegeben.'
+                    // Hausaufgabe 2: Sicherheitsabfrage für PROD-Deploy einbauen
+                    def message = params.MESSAGE ?: 'Kein Kommentar zum Deployment angegeben.'
                     if (params.ENV == 'prod' && currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause) == null) {
                         echo 'Achtung! Deployment auf PROD darf nur manuell erfolgen!'
                         error('Deployment auf PROD abgebrochen.')
                     } else {
+                        // Hausaufgabe 1: Jenkinsfile mit Parametern erstellen
                         echo "Deployment in ${params.ENV} läuft..."
+                        // Hausaufgabe 3: Nutzerdefinierten Text als Parameter einfügen
                         echo "Nachricht des Nutzers: ${message}"
-                        sh 'exit 1' // Simuliert einen Fehler
+                        // Hausaufgabe 6: Mehrere Dateien stashen und in separaten Stages nutzen
+                        unstash 'configFile'
+                        sh 'cat config.json'
+                        // Hausaufgabe 7: Stash mit Parametern kombinieren
+                        unstash 'deployInfo'
+                        sh 'cat deploy-info.txt'
+                        //sh 'exit 1' // Simuliert einen Fehler
                     }
+                }
+            }
+        }
+        stage('Documentation') {
+            steps {
+                script {
+                    // Hausaufgabe 6: Mehrere Dateien stashen und in separaten Stages nutzen
+                    unstash 'readmeFile'
+                    sh 'cat readme.txt'
                 }
             }
         }
@@ -28,7 +73,12 @@ pipeline {
             echo 'Pipeline abgeschlossen'
         }
         failure {
-            echo "Fehler! Deployment in ${params.ENV} fehlgeschlagen."
+            script {
+                // Hausaufgabe 8: Stash in einer Fehlerbehandlung nutzen
+                unstash 'logFile'
+                echo "Fehler im Deployment!"
+                sh 'cat log.txt'
+            }
         }
         success {
             echo "Deployment erfolgreich für ${params.ENV}"
