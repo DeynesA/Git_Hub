@@ -29,7 +29,6 @@ pipeline {
         }
         failure {
             echo "Fehler! Deployment in ${params.ENV} fehlgeschlagen."
-            echo "Fehler! Deployment in ${params.ENV} fehlgeschlagen."
         }
         success {
             echo "Deployment erfolgreich für ${params.ENV}"
