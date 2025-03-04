@@ -26,26 +26,29 @@ pipeline {
                     writeFile file: 'deploy-info.txt', text: "Deployment für: ${params.ENV}"
                     // Hausaufgabe 8: Stash in einer Fehlerbehandlung nutzen
                     writeFile file: 'log.txt', text: 'Build erfolgreich gestartet.'
+                    // Hausaufgabe 5: Stash & Unstash für eine Datei
+                    writeFile file: 'build.txt', text: 'Build erfolgreich'
                     // Stashe die Dateien
                     stash name: 'configFile', includes: 'config.json'
                     stash name: 'readmeFile', includes: 'readme.txt'
                     stash name: 'deployInfo', includes: 'deploy-info.txt'
                     stash name: 'logFile', includes: 'log.txt'
+                    stash name: 'buildFile', includes: 'build.txt'
                 }
             }
         }
         stage('Deploy') {
             steps {
                 script {
-                    // Hausaufgabe 2: Sicherheitsabfrage für PROD-Deploy einbauen
+                    // Hausaufgabe 3: Nutzerdefinierten Text als Parameter einfügen
                     def message = params.MESSAGE ?: 'Kein Kommentar zum Deployment angegeben.'
+                    // Hausaufgabe 2: Sicherheitsabfrage für PROD-Deploy einbauen
                     if (params.ENV == 'prod' && currentBuild.rawBuild.getCause(hudson.model.Cause$UserIdCause) == null) {
                         echo 'Achtung! Deployment auf PROD darf nur manuell erfolgen!'
                         error('Deployment auf PROD abgebrochen.')
                     } else {
                         // Hausaufgabe 1: Jenkinsfile mit Parametern erstellen
                         echo "Deployment in ${params.ENV} läuft..."
-                        // Hausaufgabe 3: Nutzerdefinierten Text als Parameter einfügen
                         echo "Nachricht des Nutzers: ${message}"
                         // Hausaufgabe 6: Mehrere Dateien stashen und in separaten Stages nutzen
                         unstash 'configFile'
@@ -53,15 +56,25 @@ pipeline {
                         // Hausaufgabe 7: Stash mit Parametern kombinieren
                         unstash 'deployInfo'
                         sh 'cat deploy-info.txt'
-                        //sh 'exit 1' // Simuliert einen Fehler
+                        // Hausaufgabe 5: Stash & Unstash für eine Datei
+                        unstash 'buildFile'
+                        sh 'cat build.txt'
+                        // Hausaufgabe 4: Pipeline mit Benachrichtigung bei Fehlern
+                        // sh 'exit 1' // Simuliere einen Fehler
                     }
                 }
             }
         }
+        // Hausaufgabe 1: Jenkinsfile mit Parametern erstellen (Bonus)
+        stage('Verification') {
+            steps {
+                echo "Deployment erfolgreich für ${params.ENV}"
+            }
+        }
+        // Hausaufgabe 6: Mehrere Dateien stashen und in separaten Stages nutzen
         stage('Documentation') {
             steps {
                 script {
-                    // Hausaufgabe 6: Mehrere Dateien stashen und in separaten Stages nutzen
                     unstash 'readmeFile'
                     sh 'cat readme.txt'
                 }
@@ -70,6 +83,7 @@ pipeline {
     }
     post {
         always {
+            // Hausaufgabe 4: Pipeline mit Benachrichtigung bei Fehlern (Bonus)
             echo 'Pipeline abgeschlossen'
         }
         failure {
@@ -81,6 +95,7 @@ pipeline {
             }
         }
         success {
+            // Hausaufgabe 4: Pipeline mit Benachrichtigung bei Fehlern (Bonus)
             echo "Deployment erfolgreich für ${params.ENV}"
         }
     }
